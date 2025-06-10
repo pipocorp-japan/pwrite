@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <!-- 基本 -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- SEO向け -->
+    <meta
+      name="description"
+      content="pWriteは、リアルタイム編集・クライアント保存・エクスポート機能を備えた、Quillベースの次世代型のエディタです。"
+    />
+    <meta
+      name="keywords"
+      content="pWrite, Quillエディタ, Quill, リッチテキスト, エクスポート, HTML出力, PDF出力, 学習向けエディタ, pwrファイル"
+    />
+    <meta name="author" content="pipo.corp / Sato Yu" />
+
+    <!-- タイトル -->
+    <title>pWrite - 次世代WYSIWYGエディタ</title>
+
+    <!-- Open Graph (SNSでの見栄えUP) -->
+    <meta property="og:title" content="pWrite - 超直感！Quillベースエディタ" />
+    <meta
+      property="og:description"
+      content="中学生が作る、超洗練されたリアルタイムリッチエディタ。保存もエクスポートも思いのまま！"
+    />
+    <meta
+      property="og:image"
+      content="https://cdn.glitch.global/24204e6f-30b9-48e8-a446-25d023523752/pWrite.png?v=1743746173601"
+    />
+    <!-- ←適当な画像URLに置き換えてな -->
+    <meta property="og:url" content="https://pwrite.glitch.me" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitterカード -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="pWrite - Quillベースの未来エディタ" />
+    <meta
+      name="twitter:description"
+      content="Quillを使用したPDF/HTML出力にも対応した高機能リッチエディタ。"
+    />
+    <meta
+      name="twitter:image"
+      content="https://cdn.glitch.global/24204e6f-30b9-48e8-a446-25d023523752/pWrite.png?v=1743746173601"
+    />
+
+    <!-- その他のUX改善 -->
+    <meta name="theme-color" content="#28a745" />
+    <link rel="icon" href="/pwrite-icon.png" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pWrite</title>
+    <link
+      rel="icon"
+      href="https://cdn.glitch.global/24204e6f-30b9-48e8-a446-25d023523752/pWrite.png?v=1743746173601"
+    />
+    <!-- Quill CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/quill@1.3.6/dist/quill.snow.css"
+    />
+    <style>
+      /* 全体のリセットとライトな背景 */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: #f7f7f7;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: #333;
+      }
+
+      .wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      main {
+        flex: 1;
+        width: 100%;
+        max-width: 1200px;
+        margin: 30px auto;
+        background: #fff;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      footer {
+        text-align: center;
+        padding: 15px;
+        background: #eaeaea;
+        font-size: 14px;
+      }
+      footer a {
+        color: #007acc;
+        text-decoration: none;
+      }
+      footer a:hover {
+        text-decoration: underline;
+      }
+
+      .button-container {
+        text-align: right;
+        margin-bottom: 20px;
+      }
+      .button-container button {
+        background: #007acc;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        padding: 10px 20px;
+        margin: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .button-container button:hover {
+        background: #005fa3;
+      }
+
+      #editor-wrapper {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      #editor {
+        height: 400px;
+      }
+
+      /* Quillエディタの背景＆テキストスタイル */
+      .ql-editor {
+        background: #fff;
+        color: #333;
+        padding: 15px;
+        line-height: 1.6;
+      }
+      .ql-editor img {
+        max-width: 100%;
+        max-height: 500px;
+        resize: both;
+        overflow: hidden;
+        object-fit: contain;
+        border: 1px solid #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <main>
+        <div class="button-container">
+          <button id="loadBtn">読み込む</button>
+          <button id="saveBtn">保存</button>
+          <button id="printBtn">PDF印刷</button>
+          <button id="exportHtmlBtn">HTMLエクスポート</button>
+        </div>
+        <div id="editor-wrapper">
+          <div id="editor"></div>
+        </div>
+      </main>
+      <footer>
+        <p>&copy;2025 <a href="https://pipocorp.glitch.me">pipo.corp</a></p>
+      </footer>
+    </div>
+
+    <!-- ファイル選択ダイアログ -->
+    <input type="file" id="fileInput" style="display: none" />
+
+    <!-- Quill JSのみを読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.6/dist/quill.min.js"></script>
+    <script>
+      // Quillエディタ初期化
+      var quill = new Quill("#editor", {
+        theme: "snow",
+        modules: {
+          toolbar: [
+            [{ header: "1" }, { header: "2" }, { font: [] }],
+            [{ list: "ordered" }, { list: "bullet" }],
+            [{ align: [] }],
+            ["bold", "italic", "underline"],
+            ["link"],
+            ["image"],
+          ],
+        },
+      });
+
+      // リンク挿入：web上のURLのみ有効にする
+      quill.getModule("toolbar").addHandler("link", () => {
+        const url = prompt(
+          "リンクのURLを入力してください（例: https://example.com）"
+        );
+        if (url && url.startsWith("http")) {
+          const range = quill.getSelection();
+          if (range) {
+            quill.formatText(range.index, range.length, "link", url);
+          }
+        } else {
+          alert("有効なURLを入力してください（例: https://example.com）");
+        }
+      });
+
+      // 画像挿入：サイズ指定付き
+      quill.getModule("toolbar").addHandler("image", () => {
+        const imageUrl = prompt(
+          "画像のURLを入力してください（例: https://example.com/image.jpg）"
+        );
+        if (imageUrl) {
+          const width = prompt(
+            "画像の幅を入力してください（例: 300px）",
+            "300px"
+          );
+          const height = prompt(
+            "画像の高さを入力してください（例: 200px）",
+            "200px"
+          );
+          const range = quill.getSelection();
+          if (range) {
+            const imageHtml = `<img src="${imageUrl}" style="width: ${width}; height: ${height};" />`;
+            quill.clipboard.dangerouslyPasteHTML(range.index, imageHtml);
+          }
+        }
+      });
+
+      // 後から画像サイズを変更する処理（画像クリック時）
+      quill.root.addEventListener("click", function (e) {
+        const target = e.target;
+        if (target.tagName === "IMG") {
+          const newWidth = prompt(
+            "新しい幅を入力してください（例: 300px）",
+            target.style.width || "300px"
+          );
+          const newHeight = prompt(
+            "新しい高さを入力してください（例: 200px）",
+            target.style.height || "200px"
+          );
+          if (newWidth && newHeight) {
+            target.style.width = newWidth;
+            target.style.height = newHeight;
+          }
+        }
+      });
+
+      // ファイル保存（HTML形式で保存）
+      document.getElementById("saveBtn").addEventListener("click", () => {
+        const content = quill.root.innerHTML;
+        const fileName = prompt(
+          "保存するファイル名を入力してください",
+          "document.pwr"
+        );
+        if (fileName) {
+          const blob = new Blob([content], { type: "text/html" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = fileName;
+          link.click();
+        }
+      });
+
+      // ファイル読み込み
+      document.getElementById("loadBtn").addEventListener("click", () => {
+        document.getElementById("fileInput").click();
+      });
+      document
+        .getElementById("fileInput")
+        .addEventListener("change", (event) => {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              quill.root.innerHTML = e.target.result;
+            };
+            reader.readAsText(file);
+          }
+        });
+
+      // PDF印刷処理
+      document.getElementById("printBtn").addEventListener("click", () => {
+        const editorContent = quill.root.innerHTML;
+        const printWindow = window.open("", "", "width=800,height=600");
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>印刷</title>
+              <style>
+                body { margin: 0; padding: 20px; background: #fff; color: #333; }
+                .editor-content { padding: 20px; }
+                @media print { .no-print { display: none; } }
+              </style>
+            </head>
+            <body>
+              <div class="editor-content">
+                ${editorContent}
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+      });
+
+      // HTMLエクスポート
+      document.getElementById("exportHtmlBtn").addEventListener("click", () => {
+        const html = quill.root.innerHTML;
+        const fileName = prompt("HTMLファイル名を入力", "document.html");
+        if (fileName) {
+          const blob = new Blob([html], { type: "text/html" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = fileName;
+          link.click();
+        }
+      });
+    </script>
+  </body>
+</html>
